@@ -1,1 +1,2 @@
-# Ballerina Temporal Library
+# module-ballerinax-temporal
+Temporal workflow support in Ballerina

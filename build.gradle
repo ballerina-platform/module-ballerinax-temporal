@@ -104,12 +104,8 @@ subprojects {
 }
 
 task build {
-    dependsOn(':temporal-commons:build')
-    dependsOn(':temporal-compiler-plugin:build')
     dependsOn(':temporal-native:build')
     dependsOn(':temporal-ballerina:build')
-    // TODO: Add back when ballerina-tests module is properly configured
-    // dependsOn(':temporal-ballerina-tests:test')
 }
 
 release {

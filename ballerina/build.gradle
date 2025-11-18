@@ -28,9 +28,7 @@ def packageName = "temporal"
 def packageOrg = "ballerinax"
 def tomlVersion = stripBallerinaExtensionVersion("${project.version}")
 def ballerinaTomlFilePlaceHolder = new File("${project.rootDir}/build-config/resources/Ballerina.toml")
-def compilerPluginTomlFilePlaceHolder = new File("${project.rootDir}/build-config/resources/CompilerPlugin.toml")
 def ballerinaTomlFile = new File("$project.projectDir/Ballerina.toml")
-def compilerPluginTomlFile = new File("$project.projectDir/CompilerPlugin.toml")
 
 def stripBallerinaExtensionVersion(String extVersion) {
     if (extVersion.matches(project.ext.timestampedVersionRegex)) {
@@ -153,9 +151,6 @@ task updateTomlFiles {
         newBallerinaToml = newBallerinaToml.replace("@failureaccess.version@", failureaccessVersion)
         newBallerinaToml = newBallerinaToml.replace("@perfmark.version@", perfmarkVersion)
         ballerinaTomlFile.text = newBallerinaToml
-
-        def newCompilerPluginToml = compilerPluginTomlFilePlaceHolder.text.replace("@project.version@", project.version)
-        compilerPluginTomlFile.text = newCompilerPluginToml
     }
 }
 
@@ -163,7 +158,7 @@ task commitTomlFiles {
     doLast {
         project.exec {
             ignoreExitValue true
-            commandLine 'sh', '-c', "git commit -m '[Automated] Update the native jar versions' Ballerina.toml Dependencies.toml CompilerPlugin.toml"
+            commandLine 'sh', '-c', "git commit -m '[Automated] Update the native jar versions' Ballerina.toml Dependencies.toml"
         }
     }
 }
@@ -191,11 +186,7 @@ updateTomlFiles.dependsOn copyStdlibs
 build.dependsOn copyExternalJars
 build.dependsOn "generatePomFileForMavenPublication"
 build.dependsOn ":${packageName}-native:build"
-build.dependsOn ":${packageName}-compiler-plugin:build"
-build.dependsOn ":${packageName}-commons:build"
 test.dependsOn ":${packageName}-native:build"
-test.dependsOn ":${packageName}-compiler-plugin:build"
-test.dependsOn ":${packageName}-commons:build"
 
 publishToMavenLocal.dependsOn build
 publish.dependsOn build

@@ -27,12 +27,6 @@ artifactId = "temporal-native"
 version = "1.0.0-SNAPSHOT"
 
 [[platform.java21.dependency]]
-path = "../commons/build/libs/temporal-commons-1.0.0-SNAPSHOT.jar"
-groupId = "io.ballerina.stdlib"
-artifactId = "temporal-commons"
-version = "1.0.0-SNAPSHOT"
-
-[[platform.java21.dependency]]
 path = "./lib/temporal-sdk-1.20.0.jar"
 
 [[platform.java21.dependency]]

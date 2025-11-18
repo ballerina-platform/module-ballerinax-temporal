@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import org.gradle.api.attributes.java.TargetJvmEnvironment
+
 plugins {
     id 'io.ballerina.plugin'
 }
@@ -44,6 +46,88 @@ def stripBallerinaExtensionVersion(String extVersion) {
     }
 }
 
+configurations {
+    externalJars {
+        canBeResolved = true
+        canBeConsumed = false
+        attributes {
+            attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, 
+                objects.named(TargetJvmEnvironment, TargetJvmEnvironment.STANDARD_JVM))
+        }
+    }
+}
+
+dependencies {
+    externalJars(group: 'io.temporal', name: 'temporal-sdk', version: "${temporalSdkVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.temporal', name: 'temporal-serviceclient', version: "${temporalServiceclientVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-api', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-context', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-stub', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-protobuf', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-protobuf-lite', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-core', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-netty-shaded', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-services', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.google.protobuf', name: 'protobuf-java', version: "${protobufVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.google.protobuf', name: 'protobuf-java-util', version: "${protobufVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: "${jacksonVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: "${jacksonVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: "${jacksonVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: "${jacksonVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jdk8', version: "${jacksonVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.uber.m3', name: 'tally-core', version: "${tallyVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.google.guava', name: 'guava', version: "${guavaVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.google.guava', name: 'failureaccess', version: "${failureaccessVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.perfmark', name: 'perfmark-api', version: "${perfmarkVersion}") {
+        transitive = false
+    }
+}
+
+task copyExternalJars(type: Copy) {
+    from configurations.externalJars
+    into "$project.projectDir/lib"
+}
+
 ballerina {
     packageOrganization = packageOrg
     module = packageName
@@ -51,10 +135,23 @@ ballerina {
     testCoverageParam = "--code-coverage --coverage-format=xml --includes=io.ballerina.stdlib.temporal.*:ballerina.temporal*"
 }
 
+clean {
+    delete "$project.projectDir/lib"
+}
+
 task updateTomlFiles {
     doLast {
         def newBallerinaToml = ballerinaTomlFilePlaceHolder.text.replace("@project.version@", project.version)
         newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
+        newBallerinaToml = newBallerinaToml.replace("@temporal.sdk.version@", temporalSdkVersion)
+        newBallerinaToml = newBallerinaToml.replace("@temporal.serviceclient.version@", temporalServiceclientVersion)
+        newBallerinaToml = newBallerinaToml.replace("@grpc.version@", grpcVersion)
+        newBallerinaToml = newBallerinaToml.replace("@protobuf.version@", protobufVersion)
+        newBallerinaToml = newBallerinaToml.replace("@jackson.version@", jacksonVersion)
+        newBallerinaToml = newBallerinaToml.replace("@tally.version@", tallyVersion)
+        newBallerinaToml = newBallerinaToml.replace("@guava.version@", guavaVersion)
+        newBallerinaToml = newBallerinaToml.replace("@failureaccess.version@", failureaccessVersion)
+        newBallerinaToml = newBallerinaToml.replace("@perfmark.version@", perfmarkVersion)
         ballerinaTomlFile.text = newBallerinaToml
 
         def newCompilerPluginToml = compilerPluginTomlFilePlaceHolder.text.replace("@project.version@", project.version)
@@ -91,6 +188,7 @@ publishing {
 
 updateTomlFiles.dependsOn copyStdlibs
 
+build.dependsOn copyExternalJars
 build.dependsOn "generatePomFileForMavenPublication"
 build.dependsOn ":${packageName}-native:build"
 build.dependsOn ":${packageName}-compiler-plugin:build"

@@ -33,16 +33,64 @@ artifactId = "temporal-commons"
 version = "@project.version@"
 
 [[platform.java21.dependency]]
-groupId = "io.temporal"
-artifactId = "temporal-sdk"
-version = "1.20.0"
+path = "./lib/temporal-sdk-@temporal.sdk.version@.jar"
 
 [[platform.java21.dependency]]
-groupId = "org.slf4j"
-artifactId = "slf4j-api"
-version = "1.7.36"
+path = "./lib/temporal-serviceclient-@temporal.serviceclient.version@.jar"
 
 [[platform.java21.dependency]]
-groupId = "org.slf4j"
-artifactId = "slf4j-simple"
-version = "1.7.36"
+path = "./lib/grpc-api-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/grpc-context-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/grpc-stub-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/grpc-protobuf-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/grpc-protobuf-lite-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/grpc-core-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/grpc-netty-shaded-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/grpc-services-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/protobuf-java-@protobuf.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/protobuf-java-util-@protobuf.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/jackson-core-@jackson.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/jackson-annotations-@jackson.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/jackson-databind-@jackson.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/jackson-datatype-jsr310-@jackson.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/jackson-datatype-jdk8-@jackson.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/tally-core-@tally.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/guava-@guava.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/failureaccess-@failureaccess.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/perfmark-api-@perfmark.version@.jar"

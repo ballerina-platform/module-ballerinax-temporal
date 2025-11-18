@@ -33,6 +33,9 @@ path = "./lib/temporal-sdk-@temporal.sdk.version@.jar"
 path = "./lib/temporal-serviceclient-@temporal.serviceclient.version@.jar"
 
 [[platform.java21.dependency]]
+path = "./lib/nexus-sdk-@nexus.sdk.version@.jar"
+
+[[platform.java21.dependency]]
 path = "./lib/grpc-api-@grpc.version@.jar"
 
 [[platform.java21.dependency]]
@@ -55,6 +58,9 @@ path = "./lib/grpc-netty-shaded-@grpc.version@.jar"
 
 [[platform.java21.dependency]]
 path = "./lib/grpc-services-@grpc.version@.jar"
+
+[[platform.java21.dependency]]
+path = "./lib/grpc-util-@grpc.version@.jar"
 
 [[platform.java21.dependency]]
 path = "./lib/protobuf-java-@protobuf.version@.jar"

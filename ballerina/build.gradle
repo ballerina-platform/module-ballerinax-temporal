@@ -63,6 +63,9 @@ dependencies {
     externalJars(group: 'io.temporal', name: 'temporal-serviceclient', version: "${temporalServiceclientVersion}") {
         transitive = false
     }
+    externalJars(group: 'io.nexusrpc', name: 'nexus-sdk', version: "${nexusSdkVersion}") {
+        transitive = false
+    }
     externalJars(group: 'io.grpc', name: 'grpc-api', version: "${grpcVersion}") {
         transitive = false
     }
@@ -85,6 +88,9 @@ dependencies {
         transitive = false
     }
     externalJars(group: 'io.grpc', name: 'grpc-services', version: "${grpcVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'io.grpc', name: 'grpc-util', version: "${grpcVersion}") {
         transitive = false
     }
     externalJars(group: 'com.google.protobuf', name: 'protobuf-java', version: "${protobufVersion}") {
@@ -144,6 +150,7 @@ task updateTomlFiles {
         newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
         newBallerinaToml = newBallerinaToml.replace("@temporal.sdk.version@", temporalSdkVersion)
         newBallerinaToml = newBallerinaToml.replace("@temporal.serviceclient.version@", temporalServiceclientVersion)
+        newBallerinaToml = newBallerinaToml.replace("@nexus.sdk.version@", nexusSdkVersion)
         newBallerinaToml = newBallerinaToml.replace("@grpc.version@", grpcVersion)
         newBallerinaToml = newBallerinaToml.replace("@protobuf.version@", protobufVersion)
         newBallerinaToml = newBallerinaToml.replace("@jackson.version@", jacksonVersion)

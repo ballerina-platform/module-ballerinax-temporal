@@ -17,7 +17,7 @@
 import ballerina/jballerina.java;
 import ballerina/workflow;
 
-isolated function newTemporalWorkerEngine(TemporalConfig config) returns handle = @java:Method {
+isolated function newTemporalWorkerEngine(Config config) returns handle = @java:Method {
     'class: "io.ballerina.stdlib.temporal.WorkerEngine",
     name: "newTemporalWorkerEngine"
 } external;

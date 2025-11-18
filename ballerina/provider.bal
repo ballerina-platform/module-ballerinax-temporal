@@ -16,15 +16,15 @@
 
 import ballerina/workflow;
 
-public isolated class TemporalPersistentProvider {
+public isolated class PersistentProvider {
 
     *workflow:PersistentProvider;
 
-    private final TemporalConfig config;
+    private final Config config;
     private final map<workflow:WorkflowModelData> registeredWorkflows = {};
     private final handle temporalWorkerEngine;
 
-    public isolated function init(TemporalConfig config) {
+    public isolated function init(Config config) {
         // Do we need to clone the config? and Can we just forgot about it after init?
         self.config = config.clone();
         self.temporalWorkerEngine = newTemporalWorkerEngine(config);

@@ -14,7 +14,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-public final TemporalConfig & readonly LOCAL_TEMPORAL_CONFIG = {
+public final Config & readonly DEFAULT_LOCAL_CONFIG = {
     serviceUrl: "localhost:7233",
     namespace: "default",
     connectionTimeout: 30000,
@@ -23,7 +23,7 @@ public final TemporalConfig & readonly LOCAL_TEMPORAL_CONFIG = {
 };
 
 # Temporal server connection configuration
-public type TemporalConfig record {|
+public type Config record {|
     # Temporal server URL (e.g., "localhost:7233")
     string serviceUrl;
     # Temporal namespace to use (e.g., "default")

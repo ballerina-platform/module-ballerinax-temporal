@@ -1,12 +1,12 @@
 [package]
 org = "ballerina"
-name = "@package.name@"
-version = "@toml.version@"
+name = "test_simple"
+version = "0.1.0"
 authors = ["Ballerina"]
 keywords = ["temporal", "test"]
 repository = "https://github.com/ballerina-platform/module-ballerinax-temporal"
 license = ["Apache-2.0"]
-distribution = "@project.version@"
+distribution = "0.1.0-SNAPSHOT"
 
 [platform.java21]
 graalvmCompatible = true

@@ -1,0 +1,242 @@
+/*
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import org.apache.tools.ant.taskdefs.condition.Os
+
+plugins {
+    id 'groovy'
+}
+
+description = 'Ballerina - Temporal Ballerina Tests'
+
+def packageName = "temporal"
+def packageOrg = "ballerinax"
+def tomlVersion = stripBallerinaExtensionVersion("${project.version}")
+def ballerinaTomlFilePlaceHolder = new File("${project.rootDir}/build-config/resources/BallerinaTest.toml")
+def ballerinaDist = "${project.rootDir}/target/ballerina-runtime"
+def distributionBinPath = "${ballerinaDist}/bin"
+def testCoverageParam = "--code-coverage --coverage-format=xml --includes=io.ballerina.stdlib.temporal.*:ballerina.temporal*"
+def testSuites = ["test-simple"]
+
+def stripBallerinaExtensionVersion(String extVersion) {
+    if (extVersion.matches(project.ext.timestampedVersionRegex)) {
+        def splitVersion = extVersion.split('-')
+        if (splitVersion.length > 3) {
+            def strippedValues = splitVersion[0..-4]
+            return strippedValues.join('-')
+        } else {
+            return extVersion
+        }
+    } else {
+        return extVersion.replace("${project.ext.snapshotVersion}", "")
+    }
+}
+
+task updateTomlFiles {
+    doLast {
+        testSuites.each { testPackage ->
+            def ballerinaTomlFile = new File("${project.projectDir}/${testPackage}/Ballerina.toml")
+            def newBallerinaToml = ballerinaTomlFilePlaceHolder.text.replace("@project.version@", project.version)
+            newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
+            newBallerinaToml = newBallerinaToml.replace("@package.name@", testPackage.replaceAll("-", "_"))
+            ballerinaTomlFile.text = newBallerinaToml
+        }
+    }
+}
+
+task commitTomlFiles {
+    doLast {
+        def files = ""
+        testSuites.each { testPackage ->
+            def ballerinaToml = file("${project.projectDir}/${testPackage}/Ballerina.toml")
+            def dependenciesToml = file("${project.projectDir}/${testPackage}/Dependencies.toml")
+            
+            if (ballerinaToml.exists()) {
+                files += "${ballerinaToml.absolutePath} "
+            }
+            if (dependenciesToml.exists()) {
+                files += "${dependenciesToml.absolutePath} "
+            }
+        }
+        if (files.trim().length() > 0) {
+            project.exec {
+                ignoreExitValue true
+                if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                    commandLine 'cmd', '/c', "git commit -m \"[Automated] Update the native jar versions\" ${files}"
+                } else {
+                    commandLine 'sh', '-c', "git commit -m '[Automated] Update the native jar versions' ${files}"
+                }
+            }
+        }
+    }
+}
+
+def groupParams = ""
+def disableGroups = ""
+def debugParams = ""
+def balJavaDebugParam = ""
+def graalvmFlag = ""
+def testParams = ""
+def skipTests = false
+
+task initializeVariables {
+    if (project.hasProperty("groups")) {
+        groupParams = "--groups ${project.findProperty('groups')}"
+    }
+    if (project.hasProperty("disable")) {
+        disableGroups = "--disable-groups ${project.findProperty("disable")}"
+    }
+    if (project.hasProperty("debug")) {
+        debugParams = "--debug ${project.findProperty("debug")}"
+    }
+    if (project.hasProperty("balJavaDebug")) {
+        balJavaDebugParam = "BAL_JAVA_DEBUG=${project.findProperty("balJavaDebug")}"
+    }
+    if (project.hasProperty('balGraalVMTest')) {
+        graalvmFlag = '--graalvm'
+    }
+    gradle.taskGraph.whenReady { graph ->
+        if (graph.hasTask(":${packageName}-ballerina-tests:ballerinaTest")) {
+            if (!project.hasProperty('balGraalVMTest')) {
+                testParams = "${testCoverageParam}"
+            }
+        } else {
+            skipTests = project.hasProperty('skipTests')
+        }
+    }
+}
+
+task startTemporalServer {
+    doLast {
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            exec {
+                workingDir project.projectDir
+                commandLine 'cmd', '/c', "docker-compose -f resources/docker-compose.yml up -d"
+            }
+        } else {
+            exec {
+                workingDir project.projectDir
+                commandLine 'sh', '-c', "docker-compose -f resources/docker-compose.yml up -d"
+            }
+        }
+        
+        // Wait for Temporal server to be ready with retry loop
+        def maxRetries = 30
+        def retryCount = 0
+        def isReady = false
+        
+        while (retryCount < maxRetries && !isReady) {
+            try {
+                if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                    def result = exec {
+                        commandLine 'cmd', '/c', 'netstat -an | findstr "7233.*LISTENING"'
+                        ignoreExitValue true
+                    }
+                    isReady = result.exitValue == 0
+                } else {
+                    def result = exec {
+                        commandLine 'sh', '-c', 'netstat -tlnp 2>/dev/null | grep ":7233" || ss -tlnp 2>/dev/null | grep ":7233" || lsof -i :7233 2>/dev/null'
+                        ignoreExitValue true
+                    }
+                    isReady = result.exitValue == 0
+                }
+                
+                if (!isReady) {
+                    println "Waiting for Temporal server to start... (attempt ${retryCount + 1}/${maxRetries})"
+                    Thread.sleep(2000)
+                    retryCount++
+                }
+            } catch (Exception e) {
+                println "Error checking Temporal server status: ${e.message}"
+                Thread.sleep(2000)
+                retryCount++
+            }
+        }
+        
+        if (!isReady) {
+            throw new GradleException("Temporal server failed to start after ${maxRetries} attempts")
+        }
+        
+        println "Temporal server is ready!"
+    }
+}
+
+task stopTemporalServer {
+    doLast {
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            exec {
+                workingDir project.projectDir
+                commandLine 'cmd', '/c', "docker-compose -f resources/docker-compose.yml down"
+                ignoreExitValue true
+            }
+        } else {
+            exec {
+                workingDir project.projectDir
+                commandLine 'sh', '-c', "docker-compose -f resources/docker-compose.yml down"
+                ignoreExitValue true
+            }
+        }
+    }
+}
+
+task ballerinaTest {
+    dependsOn(":${packageName}-ballerina:build")
+    dependsOn(updateTomlFiles)
+    dependsOn(initializeVariables)
+    dependsOn(startTemporalServer)
+    finalizedBy(stopTemporalServer)
+    finalizedBy(commitTomlFiles)
+    
+    doLast {
+        testSuites.each { testPackage ->
+            if (!skipTests) {
+                exec {
+                    workingDir "${project.projectDir}/${testPackage}"
+                    environment "JAVA_OPTS", "-DBALLERINA_DEV_COMPILE_BALLERINA_ORG=true"
+                    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                        commandLine 'cmd', '/c', "${balJavaDebugParam} ${distributionBinPath}/bal.bat test ${graalvmFlag} ${testParams} ${groupParams} ${disableGroups} ${debugParams} && exit %%ERRORLEVEL%%"
+                    } else {
+                        commandLine 'sh', '-c', "${balJavaDebugParam} ${distributionBinPath}/bal test ${graalvmFlag} ${testParams} ${groupParams} ${disableGroups} ${debugParams}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+test {
+    dependsOn(ballerinaTest)
+}
+
+clean {
+    testSuites.each { testPackage ->
+        delete "${project.projectDir}/${testPackage}/target"
+    }
+}
+
+task deleteDependencyTomlFile {
+    if (project.hasProperty("deleteDependencies")) {
+        testSuites.each { testPackage ->
+            delete "${project.projectDir}/${testPackage}/Dependencies.toml"
+        }
+    }
+}
+
+build.dependsOn ":${packageName}-ballerina:build"
+publishToMavenLocal.dependsOn build
+publish.dependsOn build

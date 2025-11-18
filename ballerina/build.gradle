@@ -17,6 +17,7 @@
  */
 
 import org.gradle.api.attributes.java.TargetJvmEnvironment
+import org.apache.tools.ant.taskdefs.condition.Os
 
 plugins {
     id 'io.ballerina.plugin'
@@ -163,6 +164,79 @@ task commitTomlFiles {
     }
 }
 
+task startTemporalServer {
+    doLast {
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            exec {
+                workingDir "${project.rootDir}/ballerina-tests"
+                commandLine 'cmd', '/c', "docker-compose -f resources/docker-compose.yml up -d"
+            }
+        } else {
+            exec {
+                workingDir "${project.rootDir}/ballerina-tests"
+                commandLine 'sh', '-c', "docker-compose -f resources/docker-compose.yml up -d"
+            }
+        }
+        
+        // Wait for Temporal server to be ready with retry loop
+        def maxRetries = 30
+        def retryCount = 0
+        def isReady = false
+        
+        while (retryCount < maxRetries && !isReady) {
+            try {
+                if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                    def result = exec {
+                        commandLine 'cmd', '/c', 'netstat -an | findstr "7233.*LISTENING"'
+                        ignoreExitValue true
+                    }
+                    isReady = result.exitValue == 0
+                } else {
+                    def result = exec {
+                        commandLine 'sh', '-c', 'netstat -tlnp 2>/dev/null | grep ":7233" || ss -tlnp 2>/dev/null | grep ":7233" || lsof -i :7233 2>/dev/null'
+                        ignoreExitValue true
+                    }
+                    isReady = result.exitValue == 0
+                }
+                
+                if (!isReady) {
+                    println "Waiting for Temporal server to start... (attempt ${retryCount + 1}/${maxRetries})"
+                    Thread.sleep(2000)
+                    retryCount++
+                }
+            } catch (Exception e) {
+                println "Error checking Temporal server status: ${e.message}"
+                Thread.sleep(2000)
+                retryCount++
+            }
+        }
+        
+        if (!isReady) {
+            throw new GradleException("Temporal server failed to start after ${maxRetries} attempts")
+        }
+        
+        println "Temporal server is ready!"
+    }
+}
+
+task stopTemporalServer {
+    doLast {
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            exec {
+                workingDir "${project.rootDir}/ballerina-tests"
+                commandLine 'cmd', '/c', "docker-compose -f resources/docker-compose.yml down"
+                ignoreExitValue true
+            }
+        } else {
+            exec {
+                workingDir "${project.rootDir}/ballerina-tests"
+                commandLine 'sh', '-c', "docker-compose -f resources/docker-compose.yml down"
+                ignoreExitValue true
+            }
+        }
+    }
+}
+
 publishing {
     publications {
         maven(MavenPublication) {
@@ -186,7 +260,13 @@ updateTomlFiles.dependsOn copyStdlibs
 build.dependsOn copyExternalJars
 build.dependsOn "generatePomFileForMavenPublication"
 build.dependsOn ":${packageName}-native:build"
+
+test.dependsOn startTemporalServer
 test.dependsOn ":${packageName}-native:build"
+test.finalizedBy stopTemporalServer
+test.onlyIf { project.hasProperty('runMainModuleTests') }
+startTemporalServer.onlyIf { project.hasProperty('runMainModuleTests') }
+stopTemporalServer.onlyIf { project.hasProperty('runMainModuleTests') }
 
 publishToMavenLocal.dependsOn build
 publish.dependsOn build

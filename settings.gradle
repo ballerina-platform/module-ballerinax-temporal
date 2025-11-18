@@ -37,10 +37,12 @@ rootProject.name = 'temporal'
 include ':checkstyle'
 include ':temporal-native'
 include ':temporal-ballerina'
+include ':temporal-ballerina-tests'
 
 project(':checkstyle').projectDir = file("build-config${File.separator}checkstyle")
 project(':temporal-native').projectDir = file("native")
 project(':temporal-ballerina').projectDir = file("ballerina")
+project(':temporal-ballerina-tests').projectDir = file("ballerina-tests")
 
 gradleEnterprise {
    buildScan {
